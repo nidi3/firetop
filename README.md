@@ -1,2 +1,2 @@
 # firetop
-The classic top command using flames
+The classic top command using flames.

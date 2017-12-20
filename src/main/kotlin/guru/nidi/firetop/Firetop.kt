@@ -18,44 +18,45 @@
 package guru.nidi.firetop
 
 import guru.nidi.firetop.Color.Companion.BLUE
+import guru.nidi.firetop.Color.Companion.DEFAULT
 import guru.nidi.firetop.Color.Companion.RED
 import guru.nidi.firetop.Color.Companion.WHITE
 import guru.nidi.firetop.Color.Companion.YELLOW
-import org.fusesource.jansi.Ansi.ansi
 
-private val COLORS = listOf(WHITE.dark(), RED.bright(), YELLOW.bright(), BLUE.bright())
-private val CHARS = charArrayOf(' ', '.', ':', '^', '*', 'x', 's', 'S', '#', '$')
+private val colors = listOf(WHITE.dark(), RED.bright(), YELLOW.bright(), BLUE.bright())
+private val chars = charArrayOf(' ', '.', ':', '^', '*', 'x', 's', 'S', '#', '$')
 
 private val top = Holder<List<Triple<Int, String, Double>>>(emptyList())
 
 fun main(vararg args: String) {
-    run()
+    val delta = if (args.isNotEmpty()) args[0].toIntOrNull() ?: 0 else 0
+    run(30, delta, 2)
 }
 
-fun run() {
+fun run(interval: Long, initDelta: Int, marginBottom: Int) {
+    val processors = Runtime.getRuntime().availableProcessors()
+
     DirectKeyMode().run { dkm ->
         try {
             startMeasureCpu(dkm)
 
             val dim = dkm.screenSize()
-            val height = dim.first - 8
+            val height = dim.first - marginBottom
             val width = dim.second
             val size = width * height
             val value = IntArray(size + width + 1)
-            var delta = 0
+            var delta = initDelta
 
             do {
                 val key = dkm.key()
                 val cpu = top.value.map { it.third }.sum()
-                print(ansi().cursor(height, 1).eraseLine().fgDefault().a(String.format(
-                        "Cpu: %3.0f%% Delta: %3d%%           ", cpu, delta)))
+                print(Ansi().setCursor(height, 1).eraseLine().color(DEFAULT).sf("Load: %3.0f%%   Norm: %3.0f%%   Delta: %3d%%", cpu, cpu / processors, delta))
                 if (key != null) {
-                    System.out.flush()
-                    if (key.isUp() && delta < 100) delta++
-                    if (key.isDown() && delta > -100) delta--
+                    if (key.isUp()) delta += 5
+                    if (key.isDown()) delta -= 5
                 }
-                var flame = cpu.toInt() + delta
-                flame = Math.min(Math.max(flame, 0), 100)
+                var flame = (cpu / processors).toInt() + delta
+                flame = Math.max(flame, 0)
                 for (i in 0 until width / 9) {
                     value[(Math.random() * width).toInt() + width * (height - 1)] = flame
                 }
@@ -65,27 +66,25 @@ fun run() {
                     if (i < size - width - 1) {
                         val y = 1 + i / width
                         val x = 1 + i % width
-                        print("\u001b[" + COLORS[col].value() + "m")
-                        print(ansi().cursor(y, x).a(CHARS[if (value[i] > 9) 9 else value[i]]))
+                        print(Ansi().color(colors[col]).setCursor(y, x).s(chars[if (value[i] > 9) 9 else value[i]]))
                         if (x == 1) {
                             top.value.takeWhile { it.third > 20 }.forEach {
                                 val cy = 1 + height * (1 - Math.min(1.0, it.third / 100))
                                 if (cy.toInt() == y - 1) {
                                     val cx = (width - 12) / 26.0 * (it.second.first().toUpperCase() - 'A')
                                     val name = it.second.substring(0, Math.min(12, it.second.length))
-                                    print(ansi().fgDefault().cursor(cy.toInt(), cx.toInt()).a(name))
+                                    print(Ansi().color(DEFAULT).setCursor(cy.toInt(), cx.toInt()).s(name))
                                 }
                             }
                         }
                     }
                 }
-                Thread.sleep(50)
+                Thread.sleep(interval)
             } while (key == null || !key.isEsc() && key.code.toChar() != 'q')
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
-            print(ansi().cursor(1000, 1))
-            System.out.flush()
+            printFlush(Ansi().setCursor(1000, 1))
         }
     }
 }

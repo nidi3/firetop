@@ -15,8 +15,6 @@
  */
 package guru.nidi.firetop
 
-import org.fusesource.jansi.Ansi
-import org.fusesource.jansi.Ansi.ansi
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.LinkedBlockingDeque
 
@@ -28,7 +26,7 @@ internal class DirectKeyMode {
         try {
             stty("-icanon min 1") // set the console to be character-buffered instead of line-buffered
             stty("-echo") // disable character echoing
-            ansiHideCursor()
+            print(Ansi().hideCursor())
             Thread {
                 while (true) {
                     try {
@@ -45,22 +43,19 @@ internal class DirectKeyMode {
             action(this)
         } finally {
             stty(ttyConfig.trim { it <= ' ' })
-            ansiShowCursor()
-            print(ansi().fg(Ansi.Color.DEFAULT).bg(Ansi.Color.DEFAULT))
-            System.out.flush()
+            printFlush(Ansi().showCursor().color(Color.DEFAULT).color(Color.DEFAULT.bg()))
         }
     }
 
     fun key() = keys.poll()
 
     fun screenSize(): Pair<Int, Int> {
-        print(ansi().cursorDown(1000).cursorRight(1000))
+        print(Ansi().cursorDown(1000).cursorRight(1000))
         return cursorPos()
     }
 
     fun cursorPos(): Pair<Int, Int> {
-        ansiGetCursorPos()
-        System.out.flush()
+        printFlush(Ansi().getCursor())
         val pos = keys.takeFirst()
         val parts = pos.info!!.split(";")
         return Pair(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]))
@@ -103,12 +98,5 @@ internal class DirectKeyMode {
         p.waitFor()
         return String(bout.toByteArray())
     }
-
-    fun ansiGetCursorPos() = print("\u001b[6n")
-
-    fun ansiHideCursor() = print("\u001b[?25l")
-
-    fun ansiShowCursor() = print("\u001b[?25h")
-
 }
 

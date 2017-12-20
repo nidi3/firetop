@@ -25,7 +25,7 @@ internal class Color private constructor(private val value: Int, private val for
         val MAGENTA = Color(5)
         val CYAN = Color(6)
         val WHITE = Color(7)
-        val DEFAULT = Color(9)
+        val DEFAULT = Color(9, bright = false)
     }
 
     fun fg() = Color(value, true, bright)
