@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>firetop</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3-SNAPSHOT</version>
 
     <name>${project.artifactId}</name>
     <description>Show CPU load with fire.</description>
@@ -26,7 +26,7 @@
         <connection>scm:git:https://github.com/nidi3/firetop</connection>
         <developerConnection>scm:git:https://github.com/nidi3/firetop</developerConnection>
         <url>https://github.com/nidi3/firetop</url>
-        <tag>firetop-0.0.2</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <build>
